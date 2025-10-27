@@ -30,32 +30,25 @@ Vagrant.configure("2") do |config|
 
   # CONFIGURACIÓ GENERAL
   config.vm.hostname = HOSTNAME
-  config.vm.synced_folder CARPETA_MAQ_FIS, CARPETA_MAQ_VIR, :owner => "vagrant", :group => "vagrant" # Afegit owner/group per consistència
+  config.vm.synced_folder CARPETA_MAQ_FIS, CARPETA_MAQ_VIR, owner: "vagrant", group: "vagrant"
   config.vm.network "forwarded_port", guest: PORT_VIR1, host: PORT_FIS1, protocol: PROT
   config.vm.network "forwarded_port", guest: PORT_VIR2, host: PORT_FIS2, protocol: PROT
 
   # PROGRAMARI A INSTAL·LAR I ORDRES A EXECUTAR DURANT LA CREACIÓ DE LA MÀQUINA
   config.vm.provision "shell", inline: <<-SHELL
-    #
     # 1- Actualització de la llista de programari. Instal·lació del programari general
-    #
     sudo apt-get -y update
     sudo apt-get install -y aptitude net-tools whois
 
-    #
-    # 2- Ordres d'instal·lació de Docker. Permís a l'usuari vagrant per utilitzar Docker sense sudo
-    #
-    # 2.1- Programari necessari per poder installar Docker
+    # 2- Instal·lació de Docker
     sudo apt-get -y install apt-transport-https ca-certificates curl gnupg
-    # 2.2- Clau GPG per poder comprovar la signatura i integritat del programari descarregat
     curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker.gpg
-    # 2.3- Afegint el dipòsit a sources.list
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker.gpg] \ 
-    https://download.docker.com/linux/debian bookworm stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    # 2.4- Descarregant el programari bàsic de Docker
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     sudo apt-get -y update
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-    # 2.5- Afegint l'usuari vagrant al grup docker
-    sudo gpasswd -a vagrant docker
+
+    # 3- Afegint l'usuari vagrant al grup docker
+    sudo groupadd docker || true
+    sudo usermod -aG docker vagrant
   SHELL
 end
